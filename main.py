@@ -1,13 +1,16 @@
+from typing import Optional
 from fastapi import FastAPI
 import uvicorn
 
 app = FastAPI()
 
-@app.get("/users/{user_id}")
-# @app.get("/users/{user_id:int}") # Flask 방식 : 함수에 대한 매개변수를 찾아볼 수 없다. ex) user_id.{}
-def get_user(user_id: int): # 타입 힌트
-    return {"user_id": user_id}
+@app.get("/users/") # trailling slash : 307 오류 발생 주의
+def get_user(limit: Optional[int] = None): # 옵셔널 타입 힌트 : Int 거나 Null일 수도 있다. 입력을 하지 않으면 None 발생 
+    return {"limit": limit}
 
 if __name__ == "__main__":
-    # uvicorn.run(app)
     uvicorn.run("main:app", reload=True)
+
+# http ':8000/users?limit=1'
+# http ':8000/users/?limit=1'
+# # http ':8000/users/?'
