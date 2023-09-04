@@ -1,80 +1,38 @@
 from typing import Optional, List
 
-from pydantic import BaseModel, parse_obj_as
+from pydantic import BaseModel, Field # Field
 from fastapi import FastAPI, Query, Path
 import uvicorn
 
 app = FastAPI()
 
-tracks = (
-    {
-        "id":1,
-        "user_id": 1,
-        "singer": "BlackPink",
-        "song": "shutdown",
-        "love" : 98.0,
-        "stream": 2500,
-    },
-    {
-        "id":2,
-        "user_id": 1,
-        "singer": "BlackPink",
-        "song": "Howyoulikethat",
-        "love" : 92.0,
-        "stream": 3000,
-    },
-    {
-        "id":3,
-        "user_id": 1,
-        "singer": "BlackPink",
-        "song": "휘파람",
-        "love" : 94.0,
-        "stream": 2000,
-    },
-)
-
-class Track(BaseModel):
+class Item(BaseModel):
     """
-    ## Track 클래스
-    - singer
-    - song
-    - love
-    - stream
+    ## Item 클래스
+    - name
+    - price : 0초과
+    - amount : 1, 0초과 100이하
     """
-    singer: str
-    song: str
-    love: float
-    stream: int = 0
+    name: str = Field(..., min_length=1, max_length=100, title="이름")
+    # Field(name(필수), 1~100)
+    price: float = Field(None, ge=0) # default = None
+    amount: int = Field(
+        default=1, 
+        gt=0,
+        le=100, #less than equal
+        title="수량",
+        description="아이템 갯수. 1~100 개 까지 소지 가능",
+    )
 
-@app.get("/users/{user_id}/tracks", response_model=List[Track])
-def get_track(
-    user_id: int = Path(..., gt=0, title="사용자 id", description="DB의 user.id"),
-    # Path(...(alias,생략_여기서는_required를 표현), gt(0보다 큰), )
-    song: str = Query(None, min_length=1, max_length=10, title="노래 이름"),
-    # Query(1~10)
-):
-    user_tracks = []
-    for track in tracks:
-        if track["user_id"] == user_id:
-            user_tracks.append(track)
-    
-    response = []
-    for track in tracks:
-        if song is None:
-            response = user_tracks
-            break
-        if track["song"] == song:
-            response.append(track)
-    
-    return response
+
+@app.post("/users/{user_id}/item") # 원래는 user_id에 대한 검증도 필요합니다.
+def create_item(item: Item):
+    return item
 
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
 
 """
-# Path, Query로 데이터 검증!
-http ':8000/users/1/tracks?song=shutdown'
-http ':8000/users/1/tracks?song=휘파람'
-
+# Field 데이터 정의
 """
