@@ -1,32 +1,80 @@
-from typing import Optional
+from typing import Optional, List
 
-from pydantic import BaseModel, HttpUrl
-from fastapi import FastAPI, status
+from pydantic import BaseModel, parse_obj_as
+from fastapi import FastAPI, Query, Path
 import uvicorn
 
 app = FastAPI()
 
-class User(BaseModel):
-    name: str
-    avatar_url: HttpUrl = "https://icotar.com/avatar/fastcampus.png?s=200"
+tracks = (
+    {
+        "id":1,
+        "user_id": 1,
+        "singer": "BlackPink",
+        "song": "shutdown",
+        "love" : 98.0,
+        "stream": 2500,
+    },
+    {
+        "id":2,
+        "user_id": 1,
+        "singer": "BlackPink",
+        "song": "Howyoulikethat",
+        "love" : 92.0,
+        "stream": 3000,
+    },
+    {
+        "id":3,
+        "user_id": 1,
+        "singer": "BlackPink",
+        "song": "휘파람",
+        "love" : 94.0,
+        "stream": 2000,
+    },
+)
 
+class Track(BaseModel):
+    """
+    ## Track 클래스
+    - singer
+    - song
+    - love
+    - stream
+    """
+    singer: str
+    song: str
+    love: float
+    stream: int = 0
 
-class CreateUser(User):
-    password: str
+@app.get("/users/{user_id}/tracks", response_model=List[Track])
+def get_track(
+    user_id: int = Path(..., gt=0, title="사용자 id", description="DB의 user.id"),
+    # Path(...(alias,생략_여기서는_required를 표현), gt(0보다 큰), )
+    song: str = Query(None, min_length=1, max_length=10, title="노래 이름"),
+    # Query(1~10)
+):
+    user_tracks = []
+    for track in tracks:
+        if track["user_id"] == user_id:
+            user_tracks.append(track)
+    
+    response = []
+    for track in tracks:
+        if song is None:
+            response = user_tracks
+            break
+        if track["song"] == song:
+            response.append(track)
+    
+    return response
 
-
-#@app.post("/users", response_model=User, status_code=201)  # 추가: status_code
-@app.post("/users", response_model=User, status_code=status.HTTP_200_OK)
-def create_user(user: CreateUser):
-    return user
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
 
 """
-status code가 201상태로 응답을 오게합니다.
-원래는 200으로 옵니다.(정상적인 경우에)
-
-
+# Path, Query로 데이터 검증!
+http ':8000/users/1/tracks?song=shutdown'
+http ':8000/users/1/tracks?song=휘파람'
 
 """
