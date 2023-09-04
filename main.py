@@ -1,38 +1,36 @@
 from typing import Optional, List
 
-from pydantic import BaseModel, Field # Field
-from fastapi import FastAPI, Query, Path
+from fastapi import FastAPI, Cookie, Header
 import uvicorn
 
 app = FastAPI()
 
-class Item(BaseModel):
-    """
-    ## Item 클래스
-    - name
-    - price : 0초과
-    - amount : 1, 0초과 100이하
-    """
-    name: str = Field(..., min_length=1, max_length=100, title="이름")
-    # Field(name(필수), 1~100)
-    price: float = Field(None, ge=0) # default = None
-    amount: int = Field(
-        default=1, 
-        gt=0,
-        le=100, #less than equal
-        title="수량",
-        description="아이템 갯수. 1~100 개 까지 소지 가능",
-    )
-
-
-@app.post("/users/{user_id}/item") # 원래는 user_id에 대한 검증도 필요합니다.
-def create_item(item: Item):
-    return item
-
+@app.get("/header")
+def get_headers(x_token: str = Header(None, title="토큰")):
+    # 헤더를 받아 헤더 반환
+    return {"X-Token": x_token}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
 
 """
-# Field 데이터 정의
+# 쿠키
+http :8000/cookie Cookie:ga=123.123.123
+
+from fastapi import FastAPI, Cookie
+import uvicorn
+
+app = FastAPI()
+
+@app.get("/cookie")
+def get_cookie(ga: str = Cookie(None)):
+    return {"ga":ga}
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", reload=True)
+
+# 헤더
+X- 접두어는 사용자 정의 헤더라는 것을 의미합니다. 
+반드시 이렇게 할 필요는 없지만, 표준 헤더와 구분짓기 위해 사용합니다. 
+http :8000/header X-Token:some.secret.token
 """
