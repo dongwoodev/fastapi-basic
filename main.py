@@ -6,52 +6,55 @@ import uvicorn
 
 app = FastAPI()
 
-# 요청
-class CreateUser(BaseModel):
-    name: str
+class User(BaseModel):
+    """
+    ## User 클래스(요청)
+    - name : String
+    - password : String
+    - avatar_url : HttpUrl
+    """
+    name: str = "fastapi"
     password: str
-    avatar_url: HttpUrl = "https://icotar.com/avatar/fastcampus.png?s=200"
+    avatar_url: HttpUrl = None
 
 
-# 응답
-class GetUser(BaseModel):
-    name: str
-    avatar_url: HttpUrl = "https://icotar.com/avatar/fastcampus.png?s=200"
+@app.post(
+    "/include",
+    response_model=User,
+    response_model_include={"name", "avatar_url"},  # Set 타입. List도 괜찮습니다.
+)
+def get_user_with_include(user: User):
+    return user
 
 
-@app.post("/users", response_model=GetUser)  # 응답 모델
-def create_user(user: CreateUser):  # 요청 모델
+@app.post(
+    "/exclude",
+    response_model=User,
+    response_model_exclude={"password"},
+)
+def get_user_with_exclude(user: User):
+    return user
+
+
+@app.post(
+    "/unset",
+    response_model=User,
+    response_model_exclude_unset=True, # 정해져있지 않거나 null인 경우 exclude
+)
+def get_user_with_exclude_unset(user: User):
+    # 요청은 User 응답은 app.post() 같이
     return user
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
 
-
-# http :8000/users name=admin password=1234
-## name과 password을 요청했지만 name만 응답되는 것을 확인할 수 있습니다.
-
 """
-상속을 받아 코드 반복 최소화를 할 수 있습니다. 
+자동 생성 문서에 표현되지 않아 추천하지 않는 방법이지만, 
+데코레이터 메소드의 다음 매개변수 중 하나를 사용하여 응답 형태를 바꿀 수 있습니다. 
 
+즉, 실제 API와 Docs에 schema와 틀리게 됩니다. 그래서 추천하지 않습니다.
 
-from fastapi import FastAPI
-from pydantic import BaseModel, HttpUrl
-
-
-app = FastAPI()
-
-
-class User(BaseModel):
-    name: str
-    avatar_url: HttpUrl = "https://icotar.com/avatar/fastcampus.png?s=200"
-
-# 요청
-class CreateUser(User):
-    password: str
-
-
-@app.post("/users", response_model=User) # 응답 모델
-def create_user(user: CreateUser):
-    # 반복 코드를 최소화함!
-    return user
+- response_model_include
+- response_model_exclude
+- response_model_exclude_unset
 """
