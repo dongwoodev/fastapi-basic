@@ -1,59 +1,57 @@
-from typing import Optional, List
+from typing import Optional
 
-from pydantic import BaseModel, HttpUrl, EmailStr
+from pydantic import BaseModel, HttpUrl
 from fastapi import FastAPI
 import uvicorn
 
 app = FastAPI()
 
-class Item(BaseModel):
-    """
-    ## Item 클래스
-    - name : string 타입 
-    - price : float 타입 
-    - amount : int 타입 (default = 0)   
-    """
-    name : str
-    price : float
-    amount : int = 0
-
-class User(BaseModel):
-    """
-    ## User 클래스
-    ### pydantic.BaseModel
-    파이썬의 데이터클래스와 비슷한 역할
-    - name : string 타입 
-    - password : string 타입
-    - avatar_url : pydantic에서는 자주쓰이는 타입들을 제공하고 검증도 합니다. Http_url도 그중 하나입니다. (이메일 주소, 파일 경로, 우편번호 등등)
-    - inventory : 중첩 모델
-    """
+# 요청
+class CreateUser(BaseModel):
     name: str
     password: str
-    avatar_url: Optional[HttpUrl] = None
-    inventory: List[Item] = [] # Item 클래스를 리스트타입으로
+    avatar_url: HttpUrl = "https://icotar.com/avatar/fastcampus.png?s=200"
+
 
 # 응답
-@app.post("/users/")
-def create_user(user: User): 
-    return user 
+class GetUser(BaseModel):
+    name: str
+    avatar_url: HttpUrl = "https://icotar.com/avatar/fastcampus.png?s=200"
 
-# 요청
-@app.get("/users/me")
-def get_user():
-    fake_user = User(
-        name="admin",
-        password="1234",
-        inventory=[
-            Item(name="바람의 검", price=1_0000_000),
-            Item(name="다이아몬드 방패", price=1_000_000),
-        ]
-    )
-    return fake_user
+
+@app.post("/users", response_model=GetUser)  # 응답 모델
+def create_user(user: CreateUser):  # 요청 모델
+    return user
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
 
-# 실무에서 비밀번호는 반드시 암호화 해야 합니다. 여기서는 예제이므로...
-# http :8000/users/me
-# http :8000/users/ name="warrior" password=q1w2e3r4t5y6 inventory:='[{"name":"나무 검", "price":10.0, "amount":99}]'
-# := wallous operator
+
+# http :8000/users name=admin password=1234
+## name과 password을 요청했지만 name만 응답되는 것을 확인할 수 있습니다.
+
+"""
+상속을 받아 코드 반복 최소화를 할 수 있습니다. 
+
+
+from fastapi import FastAPI
+from pydantic import BaseModel, HttpUrl
+
+
+app = FastAPI()
+
+
+class User(BaseModel):
+    name: str
+    avatar_url: HttpUrl = "https://icotar.com/avatar/fastcampus.png?s=200"
+
+# 요청
+class CreateUser(User):
+    password: str
+
+
+@app.post("/users", response_model=User) # 응답 모델
+def create_user(user: CreateUser):
+    # 반복 코드를 최소화함!
+    return user
+"""
