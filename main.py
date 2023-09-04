@@ -1,27 +1,29 @@
-from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, HttpUrl, EmailStr
 from fastapi import FastAPI
 import uvicorn
 
 app = FastAPI()
 
-# 열거형 지원(다중상속도 지원)
-class UserLevel(str, Enum):
-    a = "a"
-    b = "b"
-    c = "c"
+class User(BaseModel):
+    """
+    ### pydantic.BaseModel
+    파이썬의 데이터클래스와 비슷한 역할
+    - name : string 타입 
+    - password : string 타입
+    - avatar_url : pydantic에서는 자주쓰이는 타입들을 제공하고 검증도 합니다. Http_url도 그중 하나입니다. (이메일 주소, 파일 경로, 우편번호 등등)
+    """
+    name: str
+    password: str
+    avatar_url: Optional[HttpUrl] = None
 
-@app.get("/users/") # trailling slash : 307 오류 발생 주의
-def get_user(grade: UserLevel): 
-    return {"grade" : grade} 
+@app.post("/users")
+def create_user(user: User): 
+    return user 
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
 
-# http ":8000/users/?grade=a"
-# http ":8000/users/?grade=d"
-
-# 기본값을 작성하는 경우
-# # def get_user(grade: UserLevel = "a"): #하드코딩 
-# def get_user(grade: UserLevel = UserLevel.a): # 직접 작성
-# http ":8000/users/"
-# 열거형의 기본값을 적을 경우 하드코딩 하는 것보다 직접 작성하는 게 좋습니다.
+# 실무에서 비밀번호는 반드시 암호화 해야 합니다. 여기서는 예제이므로...
+# http :8000/users name=admin password=1234
