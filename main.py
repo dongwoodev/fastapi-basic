@@ -1,25 +1,33 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-users = {
-    1: {"name": "Fast"},
-    2: {"name": "Slow"},
-    3: {"name": "API"},
-}
+# 에러 클래스 정의
+class SomeError(Exception):
+    def __init__(self, name: str, code: int):
+        self.name = name
+        self.code = code
+
+    def __str__(self):
+        return f"<{self.name}> is occured. code: <{self.code}>"
 
 
-@app.get("/users/{user_id}")
-async def get_user(user_id: int):
-    # 전달 받은 user_id가 users의 key값에 없으면 에러 발생
-    if user_id not in users.keys():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"<User: {user_id}> is not exists.",
-        )
-    # 존재하면 아래처럼 리턴
-    return users[user_id]
+app = FastAPI()
 
+#  에러 핸들러 추가
+@app.exception_handler(SomeError)
+async def some_error_handler(request: Request, e: SomeError):
+    return JSONResponse(
+        content={"message": f"error is {e.name}"}, status_code=e.code
+    )
+
+
+@app.get("/error")
+async def get_error():
+    raise SomeError("Hello", 400)
 """
-일부로 에러 발생시키기
+사용자 정의 에러
+
+에러 핸들러가 있으면 정확히 어떤 에러인지 보여줄 수 있습니다.
 """
