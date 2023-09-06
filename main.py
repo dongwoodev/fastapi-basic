@@ -1,24 +1,45 @@
-from fastapi import FastAPI, Form
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, File, UploadFile
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.post("/login")
-def login(username: str = Form(...), password: str = Form(...)):
-    return {'username' : username}
+
+@app.post("/file/size")
+def get_filesize(file: bytes = File(...)):
+    return {"file_size": len(file)} # 바이트열의 크기를 리턴
+
+
+@app.post("/file/info")
+def get_file_info(file: UploadFile = File(...)):
+    return {
+        "content_type": file.content_type,
+        "filename": file.filename
+    }
+
+@app.post("/file/info")
+async def get_file_info2(file: UploadFile = File(...)):
+    file_like_obj = file.file # 존재하는 이유는 비동기때문?
+    contents = await file.read()
+
+    return {
+        "content_type": file.content_type,
+        "filename": file.filename,
+    }
 
 """
 python-multipart==0.0.6
-aiofiles==23.2.1
 
-mount : static(정적 파일)을 임포트할 수 있게 끔 도와줍니다. (가장 앞단에 있는 매개변수는 엔드포인트입니다.)
-Form : fastapi에서 Form을 임포트해서 username을 반환합니다.
+# 1. File
+간단히 File 클래스를 생성하고
+bytes라고 바이트열임을 명시해주시면 됩니다.
 
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload  
+하지만 파일이름이나 이미지등 자세한 정보를 받을 수 없습니다.
+그래서 Uploade 파일을 이용합니다.
 
-## 주의
-Form 형식을 사용한 경우에는 Json 형식을 사용할 수 없습니다.
-이유는 미디어 타입이 application/json이 아니라 application.x-www-form-urlencoded 이기 때문입니다. 
-이거는 HTTP 스펙에 관한 문제입니다.
+# 2. UploadFile
+UploadFile에는 다양한 정보가 있는데, 재밌는 것은 기존 IO(파이썬 표준 입출력 객체)와 같은 메소드를 비동기로 지원합니다.
+그래서 아래와 같은 메소드들을 지원하죠.
+- write, read, seek, close
+
+UploadeFile의 경우는 비동기 함수이기 때문에 `await`을 반드시 써줘야합니다.
+
 """
